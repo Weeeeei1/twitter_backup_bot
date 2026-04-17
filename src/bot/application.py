@@ -1,6 +1,8 @@
 """Bot application setup and handlers."""
 
+import asyncio
 import logging
+import signal
 from typing import Optional
 
 from telegram import Update
@@ -12,7 +14,6 @@ from telegram.ext import (
     ContextTypes,
 )
 
-from src.config import settings
 from src.db.database import Database
 from src.cache.redis import RedisClient
 from src.bot.handlers.start import start_handler
@@ -71,25 +72,53 @@ class BotApplication:
             f"📋 Received URL: {url}\n\nUse /backup to back up this account's tweets."
         )
 
-    def run_polling(self) -> None:
-        """Run the bot with polling."""
-        if self.app is None:
-            self.app = Application.builder().token(self.bot_token).build()
-            self._register_handlers()
+    async def run(self) -> None:
+        """Run the bot using async lifecycle methods."""
+        # Build application
+        self.app = Application.builder().token(self.bot_token).build()
 
-        logger.info("Starting bot polling...")
-        self.app.run_polling(
-            allowed_updates=Update.ALL_TYPES,
-            drop_pending_updates=True,
-        )
+        # Register handlers
+        self._register_handlers()
+
+        # Initialize the app (creates bot instance, sets up update queue)
+        await self.app.initialize()
+        logger.info("Bot initialized")
+
+        # Initialize database tables
+        await self.db.init()
+        logger.info("Database tables initialized")
+
+        # Initialize Redis
+        await self.redis.init()
+        logger.info("Redis initialized")
+
+        # Start the app
+        await self.app.start()
+        logger.info("Bot started, waiting for updates...")
+
+        # Keep running until signaled to stop
+        stop_event = asyncio.Event()
+
+        def signal_handler(sig, frame):
+            logger.info(f"Received signal {sig}")
+            stop_event.set()
+
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+
+        await stop_event.wait()
+
+        # Shutdown
+        logger.info("Shutting down...")
+        await self.app.stop()
+        await self.app.shutdown()
+        logger.info("Bot shutdown complete")
 
     async def shutdown(self) -> None:
         """Shutdown the bot gracefully."""
         if self.app:
-            logger.info("Shutting down bot...")
             try:
                 await self.app.stop()
                 await self.app.shutdown()
-                logger.info("Bot shutdown complete")
             except Exception as e:
                 logger.warning(f"Error during shutdown: {e}")

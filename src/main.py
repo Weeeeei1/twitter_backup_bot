@@ -23,23 +23,6 @@ def setup_logging() -> None:
     )
 
 
-async def init_services() -> tuple:
-    """Initialize database and Redis. Returns (db, redis)."""
-    logger = logging.getLogger(__name__)
-
-    logger.info("Initializing database...")
-    db = Database(settings.database_url)
-    await db.init()
-    logger.info("Database initialized")
-
-    logger.info("Initializing Redis...")
-    redis = RedisClient(settings.redis_url)
-    await redis.init()
-    logger.info("Redis initialized")
-
-    return db, redis
-
-
 def main() -> None:
     """Main entry point."""
     logger = logging.getLogger(__name__)
@@ -48,35 +31,23 @@ def main() -> None:
     logger.info(f"Starting Twitter Backup Bot {settings.get_version()}")
     logger.info("=" * 50)
 
-    # Initialize services in a temporary event loop
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        db, redis = loop.run_until_complete(init_services())
-    finally:
-        loop.close()
+    # Initialize database
+    logger.info("Initializing database...")
+    db = Database(settings.database_url)
+    logger.info("Database initialized")
+
+    # Initialize Redis
+    logger.info("Initializing Redis...")
+    redis = RedisClient(settings.redis_url)
+    logger.info("Redis initialized")
 
     # Create bot application
     app = BotApplication(bot_token=settings.bot_token, db=db, redis=redis)
 
-    try:
-        logger.info("Bot is ready!")
-        # run_polling creates its own event loop internally
-        # and properly handles startup/shutdown
-        app.run_polling()
-    except KeyboardInterrupt:
-        logger.info("Shutting down...")
-    finally:
-        # Cleanup is handled by run_polling() but we close our connections too
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            loop.run_until_complete(app.shutdown())
-            loop.run_until_complete(redis.close())
-            loop.run_until_complete(db.close())
-        finally:
-            loop.close()
-        logger.info("Bot stopped")
+    logger.info("Bot is ready!")
+
+    # Run with asyncio - all async code shares the same event loop
+    asyncio.run(app.run())
 
 
 if __name__ == "__main__":
