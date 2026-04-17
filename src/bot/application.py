@@ -1,6 +1,8 @@
 """Bot application setup and handlers."""
 
+import asyncio
 import logging
+import signal
 from typing import Optional
 
 from telegram import Update
@@ -87,8 +89,22 @@ class BotApplication:
         await self.app.start()
         logger.info("Bot started, waiting for updates...")
 
-        # Run idle - this keeps the bot running until stop()
-        await self.app.idle()
+        # Create an event to keep the bot running
+        # This allows proper shutdown via signals
+        stop_event = asyncio.Event()
+
+        def handle_signal(sig, frame):
+            logger.info(f"Received signal {sig}, initiating shutdown...")
+            stop_event.set()
+
+        # Register signal handlers
+        signal.signal(signal.SIGINT, handle_signal)
+        signal.signal(signal.SIGTERM, handle_signal)
+
+        # Wait for shutdown signal
+        await stop_event.wait()
+
+        logger.info("Shutdown signal received")
 
     async def shutdown(self) -> None:
         """Shutdown the bot gracefully."""
@@ -97,5 +113,6 @@ class BotApplication:
             try:
                 await self.app.stop()
                 await self.app.shutdown()
+                logger.info("Bot shutdown complete")
             except Exception as e:
                 logger.warning(f"Error during shutdown: {e}")
