@@ -21,15 +21,12 @@ async def list_accounts_handler(
 
     if not accounts:
         await update.message.reply_text(
-            "📋 **监控账号列表**\n\n"
-            "暂无监控账号。\n\n"
-            "使用 /add_account @用户名 添加账号",
-            parse_mode="Markdown",
+            "📋 监控账号列表\n\n暂无监控账号。\n\n使用 /add_account @用户名 添加账号",
         )
         return
 
-    text = "📋 **监控账号列表**\n\n"
+    text = "📋 监控账号列表\n\n"
     for i, account in enumerate(accounts, 1):
         text += f"{i}. @{account['username']} - {account['status']}\n"
 
-    await update.message.reply_text(text, parse_mode="Markdown")
+    await update.message.reply_text(text)
