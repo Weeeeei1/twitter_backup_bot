@@ -72,27 +72,32 @@ class BotApplication:
         )
 
     def run(self) -> None:
-        """Run the bot - completely synchronous to avoid event loop issues."""
+        """Run the bot - using asyncio.run() to properly manage event loop."""
         # Build application
         self.app = Application.builder().token(self.bot_token).build()
 
         # Register handlers
         self._register_handlers()
 
-        # Initialize database synchronously
+        # Use asyncio.run() to properly manage the event loop
+        # This avoids the "event loop closed" issue
         import asyncio
 
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(self.db.init())
-        loop.run_until_complete(self.redis.init())
-        loop.close()
+        async def init_and_poll():
+            # Initialize services
+            await self.db.init()
+            await self.redis.init()
+            logger.info("Services initialized")
 
-        logger.info("Services initialized")
+            # Start polling
+            await self.app.initialize()
+            await self.app.start()
+            logger.info("Bot started, waiting for updates...")
 
-        # Use run_polling which handles everything internally
-        # drop_pending_updates=True avoids processing old updates
-        self.app.run_polling(
-            allowed_updates=Update.ALL_TYPES,
-            drop_pending_updates=True,
-        )
+            # Run until interrupted
+            try:
+                await self.app.idle()
+            except Exception as e:
+                logger.error(f"Error during idle: {e}")
+
+        asyncio.run(init_and_poll())
