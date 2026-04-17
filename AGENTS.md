@@ -235,6 +235,17 @@ interval = max(min_interval, min(max_interval, interval))
 
 **禁止在服务器上直接修改代码！**
 
+### 端口映射注意事项
+
+**db 和 redis 服务不要暴露端口到主机**（除非有特殊需求）。原因：
+- Bot 容器在 Docker 内部网络通过 `db:5432` 和 `redis:6379` 访问
+- 主机网络不需要访问这些服务
+- 暴露端口可能导致与其他服务（如 sub2api）端口冲突
+
+**如果遇到端口冲突**（如 `Bind for 0.0.0.0:5432 failed: port is already allocated`）：
+1. 移除 docker-compose.yml 中 db/redis 的 `ports` 配置
+2. 或者改用其他端口（如 `ports: "5433:5432"`）
+
 ### 代码更新后服务器操作
 
 ```bash
