@@ -44,7 +44,7 @@ class AccountService:
             )
             logger.info(f"Created new user {telegram_id}")
 
-        # Ensure channels exist
+        # Ensure channels exist (skip if create_group not available)
         if not user.private_channel_id or not user.discussion_group_id:
             try:
                 channels = await self.channel_service.create_user_channels(
@@ -57,8 +57,8 @@ class AccountService:
                     discussion_group_id=channels["discussion_group_id"],
                 )
                 user = await self.user_repo.get_by_telegram_id(telegram_id)
-            except TelegramError as e:
-                logger.error(f"Failed to create channels for user {telegram_id}: {e}")
+            except (TelegramError, AttributeError) as e:
+                logger.warning(f"Channel creation skipped for user {telegram_id}: {e}")
 
         return {
             "id": user.id,
