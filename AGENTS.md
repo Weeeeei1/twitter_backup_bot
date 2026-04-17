@@ -1,5 +1,35 @@
 # AGENTS.md - Twitter Backup Bot
 
+## ⚠️ 工作流程规则
+
+**重要！每次部署/修改命令时必须遵循：**
+
+1. **用户提供配置** → 我生成**完整可执行命令** → 用户直接复制到服务器执行
+2. **命令分块输出**，每个命令块独立可用，方便用户复制
+3. **最后必须输出检查命令**，用于诊断操作是否成功
+
+### 配置提供规则
+
+| 配置项 | 获取方式 | 状态 |
+|--------|-----------|------|
+| `BOT_TOKEN` | 向 @BotFather 申请 | 用户提供 |
+| `ADMIN_TELEGRAM_ID` | 向 @userinfobot 获取 | 用户提供 |
+| `Twitter Cookies` | 浏览器登录后 F12 → Application → Cookies | 用户提供 |
+
+### 部署后检查命令
+
+每次部署完成后必须输出：
+
+```bash
+# 检查容器状态
+docker-compose ps
+
+# 检查 Bot 日志（等待 10 秒后）
+sleep 10 && docker-compose logs bot | tail -50
+```
+
+---
+
 ## 项目概述
 
 Telegram 机器人，用于监控和备份 Twitter/X 推文。
@@ -17,13 +47,15 @@ Telegram 机器人，用于监控和备份 Twitter/X 推文。
 
 ```bash
 # 1. 创建目录并克隆
-mkdir -p /opt/twitter_backup_bot && cd /opt/twitter_backup_bot && git clone https://github.com/Weeeeei1/twitter_backup_bot.git . && git checkout main
+mkdir -p /opt/twitter_backup_bot && cd /opt/twitter_backup_bot && git clone https://github.com/Weeeeei1/twitter_backup_bot.git .
+```
 
-# 2. 创建 .env 文件
+```bash
+# 2. 创建 .env 文件（用户提供配置后生成完整内容）
 cat > /opt/twitter_backup_bot/.env << 'EOF'
-BOT_TOKEN=你的BOT_TOKEN
-ADMIN_TELEGRAM_ID=你的TG_ID
-TWITTER_COOKIES=[{"domain":".x.com","name":"auth_token","value":"你的auth_token"},{"domain":".x.com","name":"ct0","value":"你的ct0"}]
+BOT_TOKEN=用户提供
+ADMIN_TELEGRAM_ID=用户提供
+TWITTER_COOKIES=用户提供
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/twitter_backup
 REDIS_URL=redis://localhost:6379/0
 BASE_CHECK_INTERVAL=300
@@ -31,21 +63,32 @@ MIN_CHECK_INTERVAL=60
 MAX_CHECK_INTERVAL=3600
 LOG_LEVEL=INFO
 EOF
+```
 
-# 3. 创建 data 目录
-mkdir -p /opt/twitter_backup_bot/data
+```bash
+# 3. 创建 docker-compose.yml（如需修改）
+# 使用项目自带的 docker-compose.yml
+```
 
-# 4. 启动服务
-cd /opt/twitter_backup_bot && docker-compose up -d --build
+```bash
+# 4. 创建 data 目录并启动
+mkdir -p /opt/twitter_backup_bot/data && cd /opt/twitter_backup_bot && docker-compose up -d --build
+```
 
-# 5. 查看日志
-docker-compose logs -f bot
+```bash
+# 5. 检查命令
+docker-compose ps && sleep 10 && docker-compose logs bot | tail -50
 ```
 
 ### 更新代码
 
 ```bash
-cd /opt/twitter_backup_bot && git pull origin main && docker-compose up -d --build
+cd /opt/twitter_backup_bot && git pull && docker-compose up -d --build
+```
+
+```bash
+# 检查命令
+docker-compose ps && sleep 10 && docker-compose logs bot | tail -50
 ```
 
 ### 常用命令
