@@ -73,43 +73,27 @@ class BotApplication:
         )
 
     def run(self) -> None:
-        """Run the bot - using asyncio.run() to properly manage event loop."""
+        """Run the bot using run_polling which handles everything correctly."""
+        import asyncio
 
-        async def init_and_poll():
-            # Initialize services
+        async def init_services():
+            """Initialize db and redis."""
             await self.db.init()
             await self.redis.init()
             logger.info("Services initialized")
 
-            # Build application
-            self.app = Application.builder().token(self.bot_token).build()
+        # Initialize services in their own event loop
+        asyncio.run(init_services())
 
-            # Register handlers
-            self._register_handlers()
+        # Build application
+        self.app = Application.builder().token(self.bot_token).build()
 
-            # Initialize and start
-            await self.app.initialize()
-            await self.app.start()
-            logger.info("Bot started, waiting for updates...")
+        # Register handlers
+        self._register_handlers()
 
-            # Keep running until stopped
-            stop_event = asyncio.Event()
-            asyncio.get_event_loop().add_signal_handler(
-                signal.SIGINT, lambda: stop_event.set()
-            )
-            asyncio.get_event_loop().add_signal_handler(
-                signal.SIGTERM, lambda: stop_event.set()
-            )
-
-            try:
-                await stop_event.wait()
-            except asyncio.CancelledError:
-                pass
-
-            # Shutdown
-            logger.info("Shutting down...")
-            await self.app.stop()
-            await self.app.shutdown()
-            logger.info("Bot shutdown complete")
-
-        asyncio.run(init_and_poll())
+        # run_polling creates its own event loop and properly handles
+        # startup/shutdown/polling
+        self.app.run_polling(
+            allowed_updates=Update.ALL_TYPES,
+            drop_pending_updates=True,
+        )
