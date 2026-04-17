@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import re
 import signal
 from typing import Optional
 
@@ -20,6 +21,9 @@ from src.cache.redis import RedisClient
 from src.bot.handlers.start import start_handler
 from src.bot.handlers.help import help_handler
 from src.bot.handlers.callbacks import callback_handler
+from src.bot.menus.main_menu import main_menu
+from src.bot.menus.account_menu import account_menu
+from src.bot.menus.settings_menu import settings_menu
 
 
 logger = logging.getLogger(__name__)
@@ -79,13 +83,70 @@ class BotApplication:
     ) -> None:
         """Handle general text input (for flows after button presses)."""
         text = update.message.text.strip()
-        logger.info(f"Received text input: {text}")
-
-        # TODO: Wire up context-based flow handling
-        # For now, just acknowledge
-        await update.message.reply_text(
-            f"📝 收到输入: {text}\n\n请使用命令或按钮操作。"
+        user = update.effective_user
+        logger.info(
+            f"Received text input: {text}, input_mode: {context.user_data.get('input_mode')}"
         )
+
+        input_mode = context.user_data.get("input_mode")
+
+        if input_mode == "add_account":
+            # Validate username format
+            if not re.match(r"^[A-Za-z0-9_]{1,15}$", text):
+                await update.message.reply_text(
+                    "❌ 用户名格式不正确\n\n请提供有效的 Twitter 用户名（不带@）",
+                    reply_markup=account_menu(),
+                )
+                return
+
+            logger.info(f"User {user.id} adding account: {text}")
+            # TODO: Add to database
+            context.user_data["input_mode"] = None
+            await update.message.reply_text(
+                f"✅ **账号已添加**\n\n开始监控：@{text}\n\n新帖子会自动备份到您的私有频道。",
+                reply_markup=account_menu(),
+            )
+
+        elif input_mode == "remove_account":
+            # Validate username format
+            if not re.match(r"^[A-Za-z0-9_]{1,15}$", text):
+                await update.message.reply_text(
+                    "❌ 用户名格式不正确\n\n请提供有效的 Twitter 用户名（不带@）",
+                    reply_markup=account_menu(),
+                )
+                return
+
+            logger.info(f"User {user.id} removing account: {text}")
+            # TODO: Remove from database
+            context.user_data["input_mode"] = None
+            await update.message.reply_text(
+                f"✅ **已移除**\n\n停止监控：@{text}",
+                reply_markup=account_menu(),
+            )
+
+        elif input_mode == "setchannel":
+            # Validate channel ID format
+            if not text.startswith("-100"):
+                await update.message.reply_text(
+                    "❌ 频道ID格式错误\n\n频道ID应该以 -100 开头，例如：-1003922641317",
+                    reply_markup=settings_menu(),
+                )
+                return
+
+            logger.info(f"Channel {text} bound by admin {user.id}")
+            # TODO: Store channel_id in database
+            context.user_data["input_mode"] = None
+            await update.message.reply_text(
+                f"✅ 频道已绑定：{text}\n\n后续备份数据将发送到此频道",
+                reply_markup=settings_menu(),
+            )
+
+        else:
+            # No active input mode, show generic message
+            await update.message.reply_text(
+                f"📝 收到输入: {text}\n\n请使用按钮操作。",
+                reply_markup=main_menu(),
+            )
 
     def run(self) -> None:
         """Run the bot using run_polling which handles everything correctly."""

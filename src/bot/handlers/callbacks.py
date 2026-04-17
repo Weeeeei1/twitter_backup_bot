@@ -110,16 +110,13 @@ async def handle_account_menu(
             parse_mode="Markdown",
         )
     elif data == "account_add_confirm":
-        # Placeholder for add account flow
+        # Set context to indicate we're awaiting username input
+        context.user_data["input_mode"] = "add_account"
         await query.edit_message_text(
-            text="📝 **添加账号**\n\n请回复推特用户名（不带@）：\n\n示例：`elonmusk`",
+            text="📝 **添加账号**\n\n请回复推特用户名（不带@）：\n\n示例：`elonmusk`\n\n点击取消可返回",
             reply_markup=InlineKeyboardMarkup(
                 [
-                    [
-                        InlineKeyboardButton(
-                            "◀️ 返回账号管理", callback_data="main_accounts"
-                        )
-                    ],
+                    [InlineKeyboardButton("❌ 取消", callback_data="main_accounts")],
                 ]
             ),
             parse_mode="Markdown",
@@ -148,16 +145,13 @@ async def handle_account_menu(
             parse_mode="Markdown",
         )
     elif data == "account_remove":
-        # Placeholder for remove account flow
+        # Set context to indicate we're awaiting username input for removal
+        context.user_data["input_mode"] = "remove_account"
         await query.edit_message_text(
-            text="➖ **移除账号**\n\n请回复要移除的账号用户名：\n\n示例：`elonmusk`",
+            text="➖ **移除账号**\n\n请回复要移除的账号用户名：\n\n示例：`elonmusk`\n\n点击取消可返回",
             reply_markup=InlineKeyboardMarkup(
                 [
-                    [
-                        InlineKeyboardButton(
-                            "◀️ 返回账号管理", callback_data="main_accounts"
-                        )
-                    ],
+                    [InlineKeyboardButton("❌ 取消", callback_data="main_accounts")],
                 ]
             ),
             parse_mode="Markdown",
@@ -233,13 +227,15 @@ async def handle_settings(update: Update, context: CallbackContext, data: str) -
             parse_mode="Markdown",
         )
     elif data == "settings_setchannel":
+        # Set context to indicate we're awaiting channel ID input
+        context.user_data["input_mode"] = "setchannel"
         await query.edit_message_text(
             text="📢 **设置私有频道**\n\n"
             "请回复频道ID（格式：-100xxxxxxxxxx）\n\n"
             "将 Bot 添加到频道作为管理员后，发送频道ID即可绑定",
             reply_markup=InlineKeyboardMarkup(
                 [
-                    [InlineKeyboardButton("◀️ 返回设置", callback_data="main_settings")],
+                    [InlineKeyboardButton("❌ 取消", callback_data="main_settings")],
                 ]
             ),
             parse_mode="Markdown",
@@ -314,6 +310,9 @@ async def handle_backup(update: Update, context: CallbackContext, data: str) -> 
 async def handle_back(update: Update, context: CallbackContext, data: str) -> None:
     """Handle back navigation button clicks."""
     query = update.callback_query
+
+    # Clear any pending input mode
+    context.user_data["input_mode"] = None
 
     if data == "back_main":
         await query.edit_message_text(
