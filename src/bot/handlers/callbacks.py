@@ -3,7 +3,7 @@
 import logging
 import re
 
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import CallbackContext
 
 from src.bot.menus.main_menu import main_menu
@@ -76,6 +76,14 @@ async def handle_main_menu(update: Update, context: CallbackContext, data: str) 
         await show_status(update, context)
 
 
+def account_back_menu() -> InlineKeyboardMarkup:
+    """Build keyboard with only back button."""
+    keyboard = [
+        [InlineKeyboardButton("◀️ 返回账号管理", callback_data="main_accounts")],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
 async def handle_account_menu(
     update: Update, context: CallbackContext, data: str
 ) -> None:
@@ -84,19 +92,74 @@ async def handle_account_menu(
 
     if data == "account_add":
         await query.edit_message_text(
-            text="➕ **添加账号**\n\n请使用命令：\n`/add_account @用户名`\n\n"
-            "示例：\n`/add_account elonmusk`",
+            text="➕ **添加账号**\n\n点击下方按钮开始添加账号：",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "➕ 添加账号", callback_data="account_add_confirm"
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "◀️ 返回账号管理", callback_data="main_accounts"
+                        )
+                    ],
+                ]
+            ),
+            parse_mode="Markdown",
+        )
+    elif data == "account_add_confirm":
+        # Placeholder for add account flow
+        await query.edit_message_text(
+            text="📝 **添加账号**\n\n请回复推特用户名（不带@）：\n\n示例：`elonmusk`",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "◀️ 返回账号管理", callback_data="main_accounts"
+                        )
+                    ],
+                ]
+            ),
             parse_mode="Markdown",
         )
     elif data == "account_list":
+        # Placeholder account list - will show actual accounts when DB is connected
         await query.edit_message_text(
-            text="📋 **账号列表**\n\n请使用命令：\n`/list_accounts`",
+            text="📋 **账号列表**\n\n"
+            "当前监控的账号：\n\n"
+            "暂无账号\n\n"
+            "点击下方按钮添加账号：",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "➕ 添加账号", callback_data="account_add_confirm"
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "◀️ 返回账号管理", callback_data="main_accounts"
+                        )
+                    ],
+                ]
+            ),
             parse_mode="Markdown",
         )
     elif data == "account_remove":
+        # Placeholder for remove account flow
         await query.edit_message_text(
-            text="➖ **移除账号**\n\n请使用命令：\n`/remove_account @用户名`\n\n"
-            "示例：\n`/remove_account elonmusk`",
+            text="➖ **移除账号**\n\n请回复要移除的账号用户名：\n\n示例：`elonmusk`",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "◀️ 返回账号管理", callback_data="main_accounts"
+                        )
+                    ],
+                ]
+            ),
             parse_mode="Markdown",
         )
 
@@ -156,7 +219,29 @@ async def handle_settings(update: Update, context: CallbackContext, data: str) -
             text="🔧 **基础设置**\n\n"
             "• 私有频道配置\n"
             "• 媒体质量设置\n\n"
-            "使用 `/setchannel` 命令配置私有频道。",
+            "点击下方按钮配置私有频道：",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            "📢 设置私有频道", callback_data="settings_setchannel"
+                        )
+                    ],
+                    [InlineKeyboardButton("◀️ 返回设置", callback_data="main_settings")],
+                ]
+            ),
+            parse_mode="Markdown",
+        )
+    elif data == "settings_setchannel":
+        await query.edit_message_text(
+            text="📢 **设置私有频道**\n\n"
+            "请回复频道ID（格式：-100xxxxxxxxxx）\n\n"
+            "将 Bot 添加到频道作为管理员后，发送频道ID即可绑定",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [InlineKeyboardButton("◀️ 返回设置", callback_data="main_settings")],
+                ]
+            ),
             parse_mode="Markdown",
         )
     elif data == "settings_interval":
@@ -167,6 +252,11 @@ async def handle_settings(update: Update, context: CallbackContext, data: str) -
             "• 最小间隔：1分钟\n"
             "• 最大间隔：1小时\n\n"
             "系统会根据博主发帖频率自动调整。",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [InlineKeyboardButton("◀️ 返回设置", callback_data="main_settings")],
+                ]
+            ),
             parse_mode="Markdown",
         )
     elif data == "settings_notification":
@@ -176,6 +266,11 @@ async def handle_settings(update: Update, context: CallbackContext, data: str) -
             "• 新推文通知：已开启\n"
             "• 备份完成通知：已开启\n"
             "• 错误通知：已开启",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [InlineKeyboardButton("◀️ 返回设置", callback_data="main_settings")],
+                ]
+            ),
             parse_mode="Markdown",
         )
 

@@ -3,8 +3,10 @@
 import logging
 import re
 
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
+
+from src.bot.menus.main_menu import main_menu
 
 
 logger = logging.getLogger(__name__)
@@ -18,6 +20,7 @@ async def backup_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             "用法：/backup @用户名\n\n"
             "示例：/backup elonmusk\n\n"
             "这将立即抓取并备份该博主的所有推文。",
+            reply_markup=main_menu(),
             parse_mode="Markdown",
         )
         return
@@ -25,7 +28,11 @@ async def backup_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     username = context.args[0].lstrip("@")
 
     if not re.match(r"^[A-Za-z0-9_]{1,15}$", username):
-        await update.message.reply_text("❌ 用户名格式不正确", parse_mode="Markdown")
+        await update.message.reply_text(
+            "❌ 用户名格式不正确",
+            reply_markup=main_menu(),
+            parse_mode="Markdown",
+        )
         return
 
     logger.info(f"Backup requested for: {username}")
@@ -35,5 +42,6 @@ async def backup_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         f"🔄 **开始备份**\n\n"
         f"正在抓取 @{username} 的推文...\n\n"
         f"这可能需要几分钟，请稍候。",
+        reply_markup=main_menu(),
         parse_mode="Markdown",
     )

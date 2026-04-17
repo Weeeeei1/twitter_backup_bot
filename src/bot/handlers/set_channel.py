@@ -2,9 +2,10 @@
 
 import logging
 
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
+from src.bot.menus.settings_menu import settings_menu
 from src.config import settings
 
 
@@ -28,7 +29,8 @@ async def set_channel_handler(
             "📢 设置私有频道\n\n"
             "用法：/setchannel <频道ID>\n\n"
             "例如：/setchannel -1003922641317\n\n"
-            "将 Bot 添加到频道作为管理员后，使用此命令绑定频道"
+            "将 Bot 添加到频道作为管理员后，使用此命令绑定频道",
+            reply_markup=settings_menu(),
         )
         return
 
@@ -37,13 +39,15 @@ async def set_channel_handler(
     # Validate channel ID format
     if not channel_id.startswith("-100"):
         await update.message.reply_text(
-            "❌ 频道ID格式错误\n\n频道ID应该以 -100 开头，例如：-1003922641317"
+            "❌ 频道ID格式错误\n\n频道ID应该以 -100 开头，例如：-1003922641317",
+            reply_markup=settings_menu(),
         )
         return
 
     # TODO: Store channel_id in database for this user
     # For now, just acknowledge
     await update.message.reply_text(
-        f"✅ 频道已绑定：{channel_id}\n\n后续备份数据将发送到此频道"
+        f"✅ 频道已绑定：{channel_id}\n\n后续备份数据将发送到此频道",
+        reply_markup=settings_menu(),
     )
     logger.info(f"Channel {channel_id} bound by admin {user.id}")

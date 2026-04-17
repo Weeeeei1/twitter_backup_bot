@@ -2,8 +2,10 @@
 
 import logging
 
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
+
+from src.bot.menus.main_menu import main_menu
 
 
 logger = logging.getLogger(__name__)
@@ -15,24 +17,15 @@ async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 📖 **帮助信息**
 
 **快速开始：**
-1. 使用 /add_account @用户名 添加要监控的推特账号
+1. 点击下方「📋 账号管理」添加要监控的推特账号
 2. 机器人会自动监控新帖子
 3. 新帖子会发送到您的私有频道
 
-**命令说明：**
-
-👤 **账号管理**
-• /add_account @username - 添加监控账号
-• /list_accounts - 列出已监控账号
-• /remove_account @username - 移除监控账号
-
-📥 **备份操作**
-• /backup @username - 立即备份博主推文
-• /history @username - 获取历史推文
-  - 支持时间范围：最近一周、最近一个月、自定义
-
-⚙️ **设置**
-• /status - 查看监控状态和统计
+**按钮操作：**
+• 📋 账号管理 - 添加/查看/移除监控账号
+• 🔄 立即备份 - 手动备份推文
+• ⚙️ 设置 - 配置私有频道等
+• 📊 状态 - 查看监控统计
 
 **关于监控间隔：**
 机器人会自动调整检查间隔：
@@ -44,4 +37,8 @@ async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 • 只有您和机器人可以访问
 """
 
-    await update.message.reply_text(help_text, parse_mode="Markdown")
+    await update.message.reply_text(
+        help_text,
+        parse_mode="Markdown",
+        reply_markup=main_menu(),
+    )
