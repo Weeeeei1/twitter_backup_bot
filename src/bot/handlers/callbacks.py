@@ -228,7 +228,7 @@ async def handle_account_menu(
 
             # Get account by username
             account = await state_module.account_service.get_account_by_username(
-                telegram_id=user.id,
+                telegram_id=update.effective_user.id,
                 username=username,
             )
 
