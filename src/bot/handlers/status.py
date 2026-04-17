@@ -26,10 +26,14 @@ async def status_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     try:
         if state_module.account_service:
+            logger.info(f"Fetching stats for user {user.id}")
             stats = await state_module.account_service.get_account_stats(user.id)
             accounts_count = stats.get("total_accounts", 0)
+            logger.info(f"Stats fetched: {accounts_count} accounts")
             scheduler_status = "✅ 运行中"
             twitter_status = "✅ 正常"
+        else:
+            logger.warning("account_service is None")
     except Exception as e:
         logger.error(f"Error fetching status: {e}")
         scheduler_status = "⚠️ 查询失败"
