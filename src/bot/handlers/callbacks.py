@@ -125,11 +125,15 @@ async def handle_account_menu(
     elif data == "account_list":
         # Fetch actual accounts from database
         user = update.effective_user
-        if state_module.account_service:
-            accounts = await state_module.account_service.list_accounts(
-                telegram_id=user.id
-            )
-        else:
+        try:
+            if state_module.account_service:
+                accounts = await state_module.account_service.list_accounts(
+                    telegram_id=user.id
+                )
+            else:
+                accounts = []
+        except Exception as e:
+            logger.error(f"Error fetching accounts: {e}")
             accounts = []
 
         if not accounts:

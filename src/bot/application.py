@@ -103,10 +103,19 @@ class BotApplication:
                 return
 
             # Use account service to add account
-            result = await state_module.account_service.add_account(
-                telegram_id=user.id,
-                twitter_username=text,
-            )
+            try:
+                result = await state_module.account_service.add_account(
+                    telegram_id=user.id,
+                    twitter_username=text,
+                )
+            except Exception as e:
+                logger.error(f"Error adding account: {e}")
+                context.user_data["input_mode"] = None
+                await update.message.reply_text(
+                    f"❌ 添加失败\n\n数据库错误，请重试。",
+                    reply_markup=account_menu(),
+                )
+                return
 
             context.user_data["input_mode"] = None
 
