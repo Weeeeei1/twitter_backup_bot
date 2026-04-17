@@ -6,7 +6,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
 from src.bot.menus.main_menu import main_menu
-from src.bot.state import account_service
+from src.bot import state as state_module
 
 
 logger = logging.getLogger(__name__)
@@ -25,8 +25,8 @@ async def status_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     twitter_status = "✅ 正常"
 
     try:
-        if account_service and account_service.account_service:
-            stats = await account_service.account_service.get_account_stats(user.id)
+        if state_module.account_service:
+            stats = await state_module.account_service.get_account_stats(user.id)
             accounts_count = stats.get("total_accounts", 0)
             scheduler_status = "✅ 运行中"
             twitter_status = "✅ 正常"
