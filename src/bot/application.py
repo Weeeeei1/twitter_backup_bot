@@ -1,8 +1,6 @@
 """Bot application setup and handlers."""
 
-import asyncio
 import logging
-import signal
 from typing import Optional
 
 from telegram import Update
@@ -81,30 +79,21 @@ class BotApplication:
         # Register handlers
         self._register_handlers()
 
-        # Initialize the app (creates bot instance, sets up update queue)
+        # Initialize the app
         await self.app.initialize()
         logger.info("Bot initialized")
 
-        # Start the app
-        await self.app.start()
-        logger.info("Bot started, waiting for updates...")
-
-        # Create an event to keep the bot running
-        # This allows proper shutdown via signals
-        stop_event = asyncio.Event()
-
-        def handle_signal(sig, frame):
-            logger.info(f"Received signal {sig}, initiating shutdown...")
-            stop_event.set()
-
-        # Register signal handlers
-        signal.signal(signal.SIGINT, handle_signal)
-        signal.signal(signal.SIGTERM, handle_signal)
-
-        # Wait for shutdown signal
-        await stop_event.wait()
-
-        logger.info("Shutdown signal received")
+        # Use run_polling with error handling
+        # drop_pending_updates=True avoids processing old updates on restart
+        try:
+            await self.app.run_polling(
+                allowed_updates=Update.ALL_TYPES,
+                drop_pending_updates=True,
+            )
+        except Exception as e:
+            logger.error(f"Error during polling: {e}")
+        finally:
+            logger.info("Polling stopped")
 
     async def shutdown(self) -> None:
         """Shutdown the bot gracefully."""
