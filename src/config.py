@@ -38,7 +38,7 @@ class Settings(BaseSettings):
 
     # Application
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
-    version: str = Field(default="v0.1.0", alias="VERSION")
+    version: str = Field(default="v0.2.0", alias="VERSION")
 
     # Paths
     data_dir: Path = Field(default=Path("data"))
