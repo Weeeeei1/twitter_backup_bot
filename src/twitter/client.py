@@ -29,27 +29,37 @@ class TwitterClient:
         if cookies is None:
             cookies = json.loads(settings.twitter_cookies)
 
-        self._accounts = cookies
-
         # Create API instance
         self.api = API()
 
-        # Add cookies for guest access
+        # Convert cookie list to string format for twscrape
+        cookie_parts = []
+        username = None
         for cookie in cookies:
-            if cookie.get("name") in ("auth_token", "ct0"):
-                await self.api.pool.add_account(
-                    username=cookie.get("name", "guest"),
-                    password="",
-                    email="",
-                    email_password="",
-                )
+            name = cookie.get("name", "")
+            value = cookie.get("value", "")
+            if name == "auth_token":
+                cookie_parts.append(f"auth_token={value}")
+            elif name == "ct0":
+                cookie_parts.append(f"ct0={value}")
 
-        # Note: For full functionality, you need to login with real credentials
-        # For now, we try to use guest tokens
-        try:
-            await self.api.pool.login_all()
-        except Exception as e:
-            logger.warning(f"Login failed, trying guest mode: {e}")
+        if cookie_parts:
+            cookies_str = "; ".join(cookie_parts)
+            logger.info(f"Initializing Twitter with cookies (auth_token and ct0)")
+            try:
+                # Add account with cookies - twscrape expects username, password, email, email_password, cookies
+                await self.api.pool.add_account(
+                    username="twitter_user",  # placeholder
+                    password="",  # not used with cookies
+                    email="",  # not used with cookies
+                    email_password="",  # not used with cookies
+                    cookies=cookies_str,
+                )
+                await self.api.pool.login_all()
+            except Exception as e:
+                logger.warning(f"Login with cookies failed: {e}")
+        else:
+            logger.warning("No valid cookies found (auth_token, ct0)")
 
         self._cookies_loaded = True
         logger.info("Twitter client initialized")
