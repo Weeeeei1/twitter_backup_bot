@@ -9,7 +9,7 @@ from telegram.ext import CallbackContext
 from src.bot.menus.main_menu import main_menu
 from src.bot.menus.account_menu import account_menu
 from src.bot.menus.settings_menu import settings_menu
-from src.bot.state import account_service
+from src.bot import state as state_module
 
 
 logger = logging.getLogger(__name__)
@@ -125,8 +125,8 @@ async def handle_account_menu(
     elif data == "account_list":
         # Fetch actual accounts from database
         user = update.effective_user
-        if account_service.account_service:
-            accounts = await account_service.account_service.list_accounts(
+        if state_module.account_service:
+            accounts = await state_module.account_service.list_accounts(
                 telegram_id=user.id
             )
         else:

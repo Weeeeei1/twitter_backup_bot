@@ -6,7 +6,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
 from src.bot.menus.account_menu import account_menu
-from src.bot.state import account_service
+from src.bot import state as state_module
 
 
 logger = logging.getLogger(__name__)
@@ -20,10 +20,8 @@ async def list_accounts_handler(
     logger.info(f"User {user.id} listing accounts")
 
     # Fetch accounts from database
-    if account_service.account_service:
-        accounts = await account_service.account_service.list_accounts(
-            telegram_id=user.id
-        )
+    if state_module.account_service:
+        accounts = await state_module.account_service.list_accounts(telegram_id=user.id)
     else:
         accounts = []
 

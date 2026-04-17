@@ -24,7 +24,7 @@ from src.bot.handlers.callbacks import callback_handler
 from src.bot.menus.main_menu import main_menu
 from src.bot.menus.account_menu import account_menu
 from src.bot.menus.settings_menu import settings_menu
-from src.bot.state import account_service
+from src.bot import state as state_module
 from src.services.account_service import AccountService
 
 
@@ -103,7 +103,7 @@ class BotApplication:
                 return
 
             # Use account service to add account
-            result = await account_service.account_service.add_account(
+            result = await state_module.account_service.add_account(
                 telegram_id=user.id,
                 twitter_username=text,
             )
@@ -131,7 +131,7 @@ class BotApplication:
                 return
 
             # Use account service to remove account
-            result = await account_service.account_service.remove_account(
+            result = await state_module.account_service.remove_account(
                 telegram_id=user.id,
                 twitter_username=text,
             )
@@ -191,7 +191,7 @@ class BotApplication:
 
         # Create account service with bot instance
         self.account_service = AccountService(self.db, self.app.bot)
-        account_service.account_service = self.account_service
+        state_module.account_service = self.account_service
 
         # Register handlers
         self._register_handlers()
