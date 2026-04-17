@@ -48,7 +48,9 @@ async def run_bot() -> None:
 
     try:
         logger.info("Bot is ready!")
-        await app.run()
+        # Use initialize() + start() + idling instead of run_polling()
+        # to avoid event loop conflicts in shutdown
+        await app.initialize_and_run()
     except KeyboardInterrupt:
         logger.info("Shutting down...")
     finally:

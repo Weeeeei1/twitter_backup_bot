@@ -71,29 +71,31 @@ class BotApplication:
             f"📋 Received URL: {url}\n\nUse /backup to back up this account's tweets."
         )
 
-    async def run(self) -> None:
-        """Run the bot."""
+    async def initialize_and_run(self) -> None:
+        """Initialize and run the bot with proper event loop handling."""
         # Build application in async context
         self.app = Application.builder().token(self.bot_token).build()
 
         # Register handlers
         self._register_handlers()
 
-        logger.info("Starting bot polling...")
+        # Initialize the app (creates bot instance, sets up update queue)
+        await self.app.initialize()
+        logger.info("Bot initialized")
 
-        # Run with polling - this will block
-        await self.app.run_polling(
-            allowed_updates=Update.ALL_TYPES, drop_pending_updates=True
-        )
+        # Start the app
+        await self.app.start()
+        logger.info("Bot started, waiting for updates...")
+
+        # Run idle - this keeps the bot running until stop()
+        await self.app.idle()
 
     async def shutdown(self) -> None:
-        """Shutdown the bot."""
-        if self.app and self.app._running:
+        """Shutdown the bot gracefully."""
+        if self.app:
             logger.info("Shutting down bot...")
             try:
                 await self.app.stop()
-            except RuntimeError as e:
-                if "not running" in str(e).lower():
-                    logger.info("App already stopped")
-                else:
-                    raise
+                await self.app.shutdown()
+            except Exception as e:
+                logger.warning(f"Error during shutdown: {e}")
