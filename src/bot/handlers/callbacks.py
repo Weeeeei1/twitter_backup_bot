@@ -426,6 +426,15 @@ async def show_status(update: Update, context: CallbackContext) -> None:
             parse_mode="Markdown",
         )
     except Exception as e:
-        # Handle "Message not modified" error
+        # Handle "Message not modified" or other errors
         logger.warning(f"show_status edit_message_text: {e}")
-        await query.answer("状态已是最新")
+        # If edit fails (e.g., content unchanged), send as new message
+        try:
+            await query.message.reply_text(
+                text=stats_text,
+                reply_markup=main_menu(),
+                parse_mode="Markdown",
+            )
+        except Exception:
+            # If that also fails, just acknowledge
+            await query.answer("状态已是最新")
