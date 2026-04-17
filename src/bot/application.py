@@ -183,22 +183,37 @@ class BotApplication:
             )
 
     def run(self) -> None:
-        """Run the bot using run_polling which handles everything correctly."""
+        """Run the bot."""
         import asyncio
 
-        # Build application first
-        self.app = Application.builder().token(self.bot_token).build()
+        async def async_run():
+            """Async run method."""
+            # Initialize services
+            await self.db.init()
+            await self.redis.init()
+            logger.info("Services initialized")
 
-        # Create account service with bot instance (lazy init for db)
-        self.account_service = AccountService(self.db, self.app.bot)
-        state_module.account_service = self.account_service
+            # Build application
+            self.app = Application.builder().token(self.bot_token).build()
 
-        # Register handlers
-        self._register_handlers()
+            # Create account service with bot instance
+            self.account_service = AccountService(self.db, self.app.bot)
+            state_module.account_service = self.account_service
 
-        # run_polling creates its own event loop and properly handles
-        # startup/shutdown/polling
-        self.app.run_polling(
-            allowed_updates=Update.ALL_TYPES,
-            drop_pending_updates=True,
-        )
+            # Register handlers
+            self._register_handlers()
+
+            # Start polling
+            await self.app.initialize()
+            await self.app.start()
+            await self.app.updater.start_polling(
+                allowed_updates=Update.ALL_TYPES,
+                drop_pending_updates=True,
+            )
+
+            # Keep running
+            logger.info("Bot is running...")
+            while True:
+                await asyncio.sleep(10)
+
+        asyncio.run(async_run())
