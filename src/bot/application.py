@@ -228,6 +228,9 @@ class BotApplication:
             await self.scheduler_pool.start()
             logger.info("Scheduler pool started")
 
+            # Make scheduler_pool accessible to handlers via state module
+            state_module.scheduler_pool = self.scheduler_pool
+
             # Enqueue all active accounts for monitoring
             from src.db.repositories import TwitterAccountRepository
 

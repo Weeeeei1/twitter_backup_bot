@@ -170,3 +170,22 @@ class AccountService:
             "active_accounts": active_accounts,
             "accounts": accounts,
         }
+
+    async def get_account_by_username(
+        self, telegram_id: int, username: str
+    ) -> Optional[dict]:
+        """Get a specific account by username for a user."""
+        user = await self.user_repo.get_by_telegram_id(telegram_id)
+        if not user:
+            return None
+
+        account = await self.account_repo.get_by_user_and_username(user.id, username)
+        if not account:
+            return None
+
+        return {
+            "id": account.id,
+            "username": account.twitter_username,
+            "display_name": account.display_name,
+            "is_active": account.is_active,
+        }

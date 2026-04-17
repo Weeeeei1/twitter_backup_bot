@@ -147,3 +147,29 @@ class SchedulerPool:
     async def get_queue_size(self) -> int:
         """Get current queue size."""
         return await self.redis.get_queue_length()
+
+    async def trigger_immediate_check(self, account_id: int) -> Dict:
+        """Trigger an immediate check for an account, bypassing the scheduler queue.
+
+        Args:
+            account_id: The account ID to check immediately.
+
+        Returns:
+            Dict with result info including tweets found.
+        """
+        logger.info(f"Triggering immediate check for account {account_id}")
+
+        if not self.monitor_service:
+            return {"success": False, "error": "Monitor service not initialized"}
+
+        # Direct call to monitor_account
+        result = await self.monitor_service.monitor_account(account_id)
+
+        # Update stats
+        scheduler = self.get_scheduler(account_id)
+        await scheduler.update_stats(account_id, result.get("count", 0))
+
+        # Re-enqueue for next scheduled check
+        await self.redis.enqueue_tweet_account(account_id)
+
+        return result

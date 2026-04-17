@@ -164,6 +164,9 @@ async def handle_account_menu(
             keyboard.append(
                 [
                     InlineKeyboardButton(
+                        f"🔄", callback_data=f"account_check_{account['username']}"
+                    ),
+                    InlineKeyboardButton(
                         f"{status} @{account['username']}",
                         callback_data=f"account_view_{account['username']}",
                     ),
@@ -202,6 +205,69 @@ async def handle_account_menu(
             ),
             parse_mode="Markdown",
         )
+    elif data.startswith("account_check_"):
+        # Parse username from callback data
+        username = data.replace("account_check_", "")
+        logger.info(f"Immediate check requested for @{username}")
+
+        # Show loading message
+        await query.edit_message_text(
+            text=f"🔄 **立即检查**\n\n正在检查 @{username} 的最新推文...\n\n请稍候...",
+            parse_mode="Markdown",
+        )
+
+        # Get account ID and trigger immediate check
+        try:
+            if not state_module.account_service or not state_module.scheduler_pool:
+                await query.edit_message_text(
+                    text="❌ **检查失败**\n\n服务未初始化，请稍后再试。",
+                    reply_markup=account_back_menu(),
+                    parse_mode="Markdown",
+                )
+                return
+
+            # Get account by username
+            account = await state_module.account_service.get_account_by_username(
+                telegram_id=user.id,
+                username=username,
+            )
+
+            if not account:
+                await query.edit_message_text(
+                    text=f"❌ **账号未找到**\n\n @{username} 不在监控列表中。",
+                    reply_markup=account_back_menu(),
+                    parse_mode="Markdown",
+                )
+                return
+
+            # Trigger immediate check
+            result = await state_module.scheduler_pool.trigger_immediate_check(
+                account["id"]
+            )
+
+            if result.get("success"):
+                count = result.get("count", 0)
+                message = result.get("message", "")
+                await query.edit_message_text(
+                    text=f"✅ **检查完成**\n\n账号：@{username}\n\n{message}",
+                    reply_markup=account_back_menu(),
+                    parse_mode="Markdown",
+                )
+            else:
+                error = result.get("error", "未知错误")
+                await query.edit_message_text(
+                    text=f"❌ **检查失败**\n\n错误：{error}",
+                    reply_markup=account_back_menu(),
+                    parse_mode="Markdown",
+                )
+
+        except Exception as e:
+            logger.error(f"Error during immediate check: {e}")
+            await query.edit_message_text(
+                text=f"❌ **检查失败**\n\n{str(e)}",
+                reply_markup=account_back_menu(),
+                parse_mode="Markdown",
+            )
 
 
 async def handle_history(update: Update, context: CallbackContext, data: str) -> None:
