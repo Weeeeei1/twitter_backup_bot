@@ -24,29 +24,37 @@ def setup_logging() -> None:
 
 def main() -> None:
     """Main entry point."""
+    import asyncio
+
     logger = logging.getLogger(__name__)
     setup_logging()
 
-    logger.info(f"Starting Twitter Backup Bot {settings.get_version()}")
-    logger.info("=" * 50)
+    async def async_main():
+        """Async main entry point."""
+        logger.info(f"Starting Twitter Backup Bot {settings.get_version()}")
+        logger.info("=" * 50)
 
-    # Initialize database
-    logger.info("Initializing database...")
-    db = Database(settings.database_url)
-    logger.info("Database initialized")
+        # Initialize database
+        logger.info("Initializing database...")
+        db = Database(settings.database_url)
+        await db.init()
+        logger.info("Database initialized")
 
-    # Initialize Redis
-    logger.info("Initializing Redis...")
-    redis = RedisClient(settings.redis_url)
-    logger.info("Redis initialized")
+        # Initialize Redis
+        logger.info("Initializing Redis...")
+        redis = RedisClient(settings.redis_url)
+        await redis.init()
+        logger.info("Redis initialized")
 
-    # Create bot application
-    app = BotApplication(bot_token=settings.bot_token, db=db, redis=redis)
+        # Create bot application
+        app = BotApplication(bot_token=settings.bot_token, db=db, redis=redis)
 
-    logger.info("Bot is ready!")
+        logger.info("Bot is ready!")
 
-    # run() handles everything synchronously
-    app.run()
+        # run() handles everything synchronously
+        app.run()
+
+    asyncio.run(async_main())
 
 
 if __name__ == "__main__":
