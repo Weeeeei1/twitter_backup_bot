@@ -79,11 +79,9 @@ class BotApplication:
         # Register handlers
         self._register_handlers()
 
-        # Initialize the app
-        await self.app.initialize()
-        logger.info("Bot initialized")
+        logger.info("Starting bot polling...")
 
-        # Use run_polling with error handling
+        # Use run_polling - it handles initialization internally
         # drop_pending_updates=True avoids processing old updates on restart
         try:
             await self.app.run_polling(
@@ -91,7 +89,7 @@ class BotApplication:
                 drop_pending_updates=True,
             )
         except Exception as e:
-            logger.error(f"Error during polling: {e}")
+            logger.error(f"Error during polling: {e}", exc_info=True)
         finally:
             logger.info("Polling stopped")
 
