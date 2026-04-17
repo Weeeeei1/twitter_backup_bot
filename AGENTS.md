@@ -47,7 +47,7 @@ Telegram 机器人，用于监控和备份 Twitter/X 推文。
 
 ```bash
 # 1. 创建目录并克隆
-mkdir -p /opt/twitter_backup_bot && cd /opt/twitter_backup_bot && git clone https://github.com/Weeeeei1/twitter_backup_bot.git .
+mkdir -p /opt/twitter_backup_bot && cd /opt/twitter_backup_bot && git clone https://github.com/Weeeeei1/twitter_backup_bot.git . && git checkout main
 ```
 
 ```bash
@@ -83,7 +83,7 @@ docker-compose ps && sleep 10 && docker-compose logs bot | tail -50
 ### 更新代码
 
 ```bash
-cd /opt/twitter_backup_bot && git pull && docker-compose up -d --build
+cd /opt/twitter_backup_bot && git fetch origin && git reset --hard origin/main && docker-compose up -d --build
 ```
 
 ```bash
@@ -249,7 +249,7 @@ interval = max(min_interval, min(max_interval, interval))
 ### 代码更新后服务器操作
 
 ```bash
-cd /opt/twitter_backup_bot && git pull && docker-compose up -d --build
+cd /opt/twitter_backup_bot && git fetch origin && git reset --hard origin/main && docker-compose up -d --build
 ```
 
 ```bash
