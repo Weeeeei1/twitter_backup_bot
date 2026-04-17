@@ -9,6 +9,7 @@ from telegram.ext import CallbackContext
 from src.bot.menus.main_menu import main_menu
 from src.bot.menus.account_menu import account_menu
 from src.bot.menus.settings_menu import settings_menu
+from src.bot.application import _account_service
 
 
 logger = logging.getLogger(__name__)
@@ -122,26 +123,65 @@ async def handle_account_menu(
             parse_mode="Markdown",
         )
     elif data == "account_list":
-        # Placeholder account list - will show actual accounts when DB is connected
-        await query.edit_message_text(
-            text="📋 **账号列表**\n\n"
-            "当前监控的账号：\n\n"
-            "暂无账号\n\n"
-            "点击下方按钮添加账号：",
-            reply_markup=InlineKeyboardMarkup(
+        # Fetch actual accounts from database
+        user = update.effective_user
+        if _account_service:
+            accounts = await _account_service.list_accounts(telegram_id=user.id)
+        else:
+            accounts = []
+
+        if not accounts:
+            await query.edit_message_text(
+                text="📋 **账号列表**\n\n暂无监控账号。\n\n点击下方按钮添加账号：",
+                reply_markup=InlineKeyboardMarkup(
+                    [
+                        [
+                            InlineKeyboardButton(
+                                "➕ 添加账号", callback_data="account_add_confirm"
+                            )
+                        ],
+                        [
+                            InlineKeyboardButton(
+                                "◀️ 返回账号管理", callback_data="main_accounts"
+                            )
+                        ],
+                    ]
+                ),
+                parse_mode="Markdown",
+            )
+            return
+
+        # Build account list with inline buttons
+        keyboard = []
+        for account in accounts:
+            status = "🟢" if account.get("is_active") else "🔴"
+            keyboard.append(
                 [
-                    [
-                        InlineKeyboardButton(
-                            "➕ 添加账号", callback_data="account_add_confirm"
-                        )
-                    ],
-                    [
-                        InlineKeyboardButton(
-                            "◀️ 返回账号管理", callback_data="main_accounts"
-                        )
-                    ],
+                    InlineKeyboardButton(
+                        f"{status} @{account['username']}",
+                        callback_data=f"account_view_{account['username']}",
+                    ),
+                    InlineKeyboardButton(
+                        "🗑️", callback_data=f"account_delete_{account['username']}"
+                    ),
                 ]
-            ),
+            )
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    "➕ 添加账号", callback_data="account_add_confirm"
+                ),
+            ]
+        )
+        keyboard.append(
+            [
+                InlineKeyboardButton("◀️ 返回账号管理", callback_data="main_accounts"),
+            ]
+        )
+
+        await query.edit_message_text(
+            text=f"📋 **账号列表**\n\n共 {len(accounts)} 个账号：",
+            reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode="Markdown",
         )
     elif data == "account_remove":

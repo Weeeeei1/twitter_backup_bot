@@ -24,9 +24,13 @@ from src.bot.handlers.callbacks import callback_handler
 from src.bot.menus.main_menu import main_menu
 from src.bot.menus.account_menu import account_menu
 from src.bot.menus.settings_menu import settings_menu
+from src.services.account_service import AccountService
 
 
 logger = logging.getLogger(__name__)
+
+# Global account service reference for handlers
+_account_service = None
 
 
 class BotApplication:
@@ -38,6 +42,7 @@ class BotApplication:
         self.db = db
         self.redis = redis
         self.app: Optional[Application] = None
+        self.account_service: Optional[AccountService] = None
 
     def _register_handlers(self) -> None:
         """Register command handlers."""
@@ -99,13 +104,24 @@ class BotApplication:
                 )
                 return
 
-            logger.info(f"User {user.id} adding account: {text}")
-            # TODO: Add to database
-            context.user_data["input_mode"] = None
-            await update.message.reply_text(
-                f"✅ **账号已添加**\n\n开始监控：@{text}\n\n新帖子会自动备份到您的私有频道。",
-                reply_markup=account_menu(),
+            # Use account service to add account
+            result = await self.account_service.add_account(
+                telegram_id=user.id,
+                twitter_username=text,
             )
+
+            context.user_data["input_mode"] = None
+
+            if result["success"]:
+                await update.message.reply_text(
+                    f"✅ **账号已添加**\n\n开始监控：@{text}\n\n新帖子会自动备份到您的私有频道。",
+                    reply_markup=account_menu(),
+                )
+            else:
+                await update.message.reply_text(
+                    f"❌ 添加失败\n\n{result.get('error', '未知错误')}",
+                    reply_markup=account_menu(),
+                )
 
         elif input_mode == "remove_account":
             # Validate username format
@@ -116,13 +132,24 @@ class BotApplication:
                 )
                 return
 
-            logger.info(f"User {user.id} removing account: {text}")
-            # TODO: Remove from database
-            context.user_data["input_mode"] = None
-            await update.message.reply_text(
-                f"✅ **已移除**\n\n停止监控：@{text}",
-                reply_markup=account_menu(),
+            # Use account service to remove account
+            result = await self.account_service.remove_account(
+                telegram_id=user.id,
+                twitter_username=text,
             )
+
+            context.user_data["input_mode"] = None
+
+            if result["success"]:
+                await update.message.reply_text(
+                    f"✅ **已移除**\n\n停止监控：@{text}",
+                    reply_markup=account_menu(),
+                )
+            else:
+                await update.message.reply_text(
+                    f"❌ 移除失败\n\n{result.get('error', '未知错误')}",
+                    reply_markup=account_menu(),
+                )
 
         elif input_mode == "setchannel":
             # Validate channel ID format
@@ -163,6 +190,11 @@ class BotApplication:
 
         # Build application
         self.app = Application.builder().token(self.bot_token).build()
+
+        # Create account service with bot instance
+        self.account_service = AccountService(self.db, self.app.bot)
+        global _account_service
+        _account_service = self.account_service
 
         # Register handlers
         self._register_handlers()
