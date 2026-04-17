@@ -71,27 +71,17 @@ class BotApplication:
             f"📋 Received URL: {url}\n\nUse /backup to back up this account's tweets."
         )
 
-    async def initialize_and_run(self) -> None:
-        """Initialize and run the bot with proper event loop handling."""
-        # Build application in async context
-        self.app = Application.builder().token(self.bot_token).build()
-
-        # Register handlers
-        self._register_handlers()
+    def run_polling(self) -> None:
+        """Run the bot with polling."""
+        if self.app is None:
+            self.app = Application.builder().token(self.bot_token).build()
+            self._register_handlers()
 
         logger.info("Starting bot polling...")
-
-        # Use run_polling - it handles initialization internally
-        # drop_pending_updates=True avoids processing old updates on restart
-        try:
-            await self.app.run_polling(
-                allowed_updates=Update.ALL_TYPES,
-                drop_pending_updates=True,
-            )
-        except Exception as e:
-            logger.error(f"Error during polling: {e}", exc_info=True)
-        finally:
-            logger.info("Polling stopped")
+        self.app.run_polling(
+            allowed_updates=Update.ALL_TYPES,
+            drop_pending_updates=True,
+        )
 
     async def shutdown(self) -> None:
         """Shutdown the bot gracefully."""
