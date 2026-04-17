@@ -20,6 +20,7 @@ from src.db.database import Database
 from src.cache.redis import RedisClient
 from src.bot.handlers.start import start_handler
 from src.bot.handlers.help import help_handler
+from src.bot.handlers.status import status_handler
 from src.bot.handlers.callbacks import callback_handler
 from src.bot.menus.main_menu import main_menu
 from src.bot.menus.account_menu import account_menu
@@ -55,6 +56,7 @@ class BotApplication:
         # Core command handlers
         self.app.add_handler(CommandHandler("start", start_handler))
         self.app.add_handler(CommandHandler("help", help_handler))
+        self.app.add_handler(CommandHandler("status", status_handler))
 
         # Callback query handler for inline keyboard buttons
         self.app.add_handler(CallbackQueryHandler(callback_handler))
