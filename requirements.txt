@@ -1,0 +1,30 @@
+# Python
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Telegram Bot
+python-telegram-bot[ext]>=20.0
+
+# Twitter
+twscrape>=0.17.0
+
+# Media Download
+yt-dlp>=2024.0.0
+
+# Database
+sqlalchemy>=2.0.0
+asyncpg>=0.29.0
+alembic>=1.13.0
+
+# Redis
+redis>=5.0.0
+aioredis>=2.0.0
+
+# Async
+aiohttp>=3.9.0
+asyncio>=3.4.0
+
+# Utils
+beautifulsoup4>=4.12.0
+lxml>=5.0.0
