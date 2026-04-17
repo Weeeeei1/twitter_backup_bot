@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     bot_token: str = Field(default="", alias="BOT_TOKEN")
     admin_telegram_id: int = Field(default=0, alias="ADMIN_TELEGRAM_ID")
 
+    # Channel
+    private_channel_id: str = Field(default="", alias="PRIVATE_CHANNEL_ID")
+
     # Twitter
     twitter_cookies: str = Field(default="[]", alias="TWITTER_COOKIES")
 
