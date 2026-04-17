@@ -8,6 +8,28 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 
 
+def _get_version_from_file() -> str:
+    """Read version from VERSION file."""
+    try:
+        version_file = Path(__file__).parent.parent / "VERSION"
+        if version_file.exists():
+            for line in version_file.read_text().splitlines():
+                line = line.strip()
+                if line.startswith("Version:") or line.startswith("version:"):
+                    return line.split(":", 1)[1].strip()
+            # Try to find version pattern anywhere in file
+            import re
+
+            content = version_file.read_text()
+            match = re.search(r"v?\d+\.\d+\.\d+", content)
+            if match:
+                v = match.group(0)
+                return v if v.startswith("v") else f"v{v}"
+        return "v0.2.1"  # fallback
+    except Exception:
+        return "v0.2.1"  # fallback
+
+
 class Settings(BaseSettings):
     """Application settings."""
 
@@ -38,7 +60,7 @@ class Settings(BaseSettings):
 
     # Application
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
-    version: str = Field(default="v0.2.0", alias="VERSION")
+    version: str = Field(default=_get_version_from_file(), alias="VERSION")
 
     # Paths
     data_dir: Path = Field(default=Path("data"))

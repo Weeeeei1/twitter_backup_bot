@@ -371,16 +371,44 @@ async def handle_back(update: Update, context: CallbackContext, data: str) -> No
 async def show_status(update: Update, context: CallbackContext) -> None:
     """Show status information."""
     query = update.callback_query
+    user = update.effective_user
 
-    stats_text = """
+    # Fetch real stats
+    accounts_count = 0
+    tweets_count = "待实现"
+    media_count = "待实现"
+    scheduler_status = "✅ 运行中"
+
+    try:
+        if state_module.account_service:
+            stats = await state_module.account_service.get_account_stats(user.id)
+            accounts_count = stats.get("total_accounts", 0)
+            scheduler_status = "✅ 运行中"
+        else:
+            scheduler_status = "⚠️ 服务未初始化"
+    except Exception as e:
+        logger.error(f"Error fetching stats: {e}")
+        scheduler_status = "⚠️ 查询失败"
+
+    # Get actual version
+    try:
+        from src import __version__
+
+        version_str = __version__
+    except Exception:
+        version_str = "v0.2.0"
+
+    stats_text = f"""
 📊 **状态统计**
 
-**版本：** v0.2.0
+**版本：** {version_str}
 
 **监控统计：**
-• 监控账号数：0
-• 总推文数：0
-• 总媒体数：0
+• 监控账号数：{accounts_count}
+• 总推文数：{tweets_count}
+• 总媒体数：{media_count}
+
+**调度器：** {scheduler_status}
 
 **最近活动：**
 暂无
@@ -391,8 +419,13 @@ async def show_status(update: Update, context: CallbackContext) -> None:
 • Redis：✅ 正常
 """
 
-    await query.edit_message_text(
-        text=stats_text,
-        reply_markup=main_menu(),
-        parse_mode="Markdown",
-    )
+    try:
+        await query.edit_message_text(
+            text=stats_text,
+            reply_markup=main_menu(),
+            parse_mode="Markdown",
+        )
+    except Exception as e:
+        # Handle "Message not modified" error
+        logger.warning(f"show_status edit_message_text: {e}")
+        await query.answer("状态已是最新")
