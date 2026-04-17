@@ -10,6 +10,7 @@ from telegram.ext import (
     Application,
     CommandHandler,
     MessageHandler,
+    CallbackQueryHandler,
     filters,
     ContextTypes,
 )
@@ -18,13 +19,7 @@ from src.db.database import Database
 from src.cache.redis import RedisClient
 from src.bot.handlers.start import start_handler
 from src.bot.handlers.help import help_handler
-from src.bot.handlers.add_account import add_account_handler
-from src.bot.handlers.list_accounts import list_accounts_handler
-from src.bot.handlers.remove_account import remove_account_handler
-from src.bot.handlers.status import status_handler
-from src.bot.handlers.backup import backup_handler
-from src.bot.handlers.history import history_handler
-from src.bot.handlers.set_channel import set_channel_handler
+from src.bot.handlers.callbacks import callback_handler
 
 
 logger = logging.getLogger(__name__)
@@ -45,21 +40,26 @@ class BotApplication:
         if self.app is None:
             return
 
+        # Core command handlers
         self.app.add_handler(CommandHandler("start", start_handler))
         self.app.add_handler(CommandHandler("help", help_handler))
-        self.app.add_handler(CommandHandler("add_account", add_account_handler))
-        self.app.add_handler(CommandHandler("list_accounts", list_accounts_handler))
-        self.app.add_handler(CommandHandler("remove_account", remove_account_handler))
-        self.app.add_handler(CommandHandler("status", status_handler))
-        self.app.add_handler(CommandHandler("backup", backup_handler))
-        self.app.add_handler(CommandHandler("history", history_handler))
-        self.app.add_handler(CommandHandler("setchannel", set_channel_handler))
+
+        # Callback query handler for inline keyboard buttons
+        self.app.add_handler(CallbackQueryHandler(callback_handler))
 
         # Message handler for Twitter URLs
         self.app.add_handler(
             MessageHandler(
                 filters.TEXT & filters.Regex(r"(https?://)?(twitter\.com|x\.com)/\w+"),
                 self._handle_twitter_url,
+            )
+        )
+
+        # Message handler for general text input flows (e.g., username input after button press)
+        self.app.add_handler(
+            MessageHandler(
+                filters.TEXT & ~filters.COMMAND,
+                self._handle_text_input,
             )
         )
 
@@ -72,6 +72,19 @@ class BotApplication:
 
         await update.message.reply_text(
             f"📋 Received URL: {url}\n\nUse /backup to back up this account's tweets."
+        )
+
+    async def _handle_text_input(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ) -> None:
+        """Handle general text input (for flows after button presses)."""
+        text = update.message.text.strip()
+        logger.info(f"Received text input: {text}")
+
+        # TODO: Wire up context-based flow handling
+        # For now, just acknowledge
+        await update.message.reply_text(
+            f"📝 收到输入: {text}\n\n请使用命令或按钮操作。"
         )
 
     def run(self) -> None:
