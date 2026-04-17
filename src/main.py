@@ -1,6 +1,5 @@
 """Main entry point for the Twitter Backup Bot."""
 
-import asyncio
 import logging
 import sys
 from pathlib import Path
@@ -46,8 +45,8 @@ def main() -> None:
 
     logger.info("Bot is ready!")
 
-    # Run with asyncio - all async code shares the same event loop
-    asyncio.run(app.run())
+    # run() handles everything synchronously
+    app.run()
 
 
 if __name__ == "__main__":
