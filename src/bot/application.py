@@ -24,6 +24,7 @@ from src.bot.handlers.remove_account import remove_account_handler
 from src.bot.handlers.status import status_handler
 from src.bot.handlers.backup import backup_handler
 from src.bot.handlers.history import history_handler
+from src.bot.handlers.set_channel import set_channel_handler
 
 
 logger = logging.getLogger(__name__)
@@ -52,6 +53,7 @@ class BotApplication:
         self.app.add_handler(CommandHandler("status", status_handler))
         self.app.add_handler(CommandHandler("backup", backup_handler))
         self.app.add_handler(CommandHandler("history", history_handler))
+        self.app.add_handler(CommandHandler("setchannel", set_channel_handler))
 
         # Message handler for Twitter URLs
         self.app.add_handler(
