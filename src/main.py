@@ -23,8 +23,8 @@ def setup_logging() -> None:
     )
 
 
-async def main() -> None:
-    """Main entry point."""
+async def run_bot() -> None:
+    """Run the bot."""
     logger = logging.getLogger(__name__)
 
     logger.info(f"Starting Twitter Backup Bot {settings.get_version()}")
@@ -58,6 +58,11 @@ async def main() -> None:
         logger.info("Bot stopped")
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Main entry point."""
     setup_logging()
-    asyncio.run(main())
+    asyncio.run(run_bot())
+
+
+if __name__ == "__main__":
+    main()
