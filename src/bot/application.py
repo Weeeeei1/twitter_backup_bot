@@ -186,19 +186,10 @@ class BotApplication:
         """Run the bot using run_polling which handles everything correctly."""
         import asyncio
 
-        async def init_services():
-            """Initialize db and redis."""
-            await self.db.init()
-            await self.redis.init()
-            logger.info("Services initialized")
-
-        # Initialize services in their own event loop
-        asyncio.run(init_services())
-
-        # Build application
+        # Build application first
         self.app = Application.builder().token(self.bot_token).build()
 
-        # Create account service with bot instance
+        # Create account service with bot instance (lazy init for db)
         self.account_service = AccountService(self.db, self.app.bot)
         state_module.account_service = self.account_service
 

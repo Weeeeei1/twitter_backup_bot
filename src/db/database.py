@@ -28,26 +28,47 @@ class Database:
     def __init__(self, database_url: str):
         """Initialize database connection."""
         self.database_url = database_url
-        self.engine = create_async_engine(
-            database_url,
-            echo=False,
-            pool_size=10,
-            max_overflow=20,
-        )
-        self.session_factory = async_sessionmaker(
-            self.engine,
-            class_=AsyncSession,
-            expire_on_commit=False,
-        )
+        self._engine = None
+        self._session_factory = None
+        self._initialized = False
 
     async def init(self) -> None:
         """Initialize database tables."""
-        async with self.engine.begin() as conn:
+        if self._initialized:
+            return
+        self._engine = create_async_engine(
+            self.database_url,
+            echo=False,
+            pool_size=5,
+            max_overflow=10,
+            pool_pre_ping=True,
+        )
+        self._session_factory = async_sessionmaker(
+            self._engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
+        )
+        async with self._engine.begin() as conn:
             # Import models to register them
             from src.db import models  # noqa: F401
 
             await conn.run_sync(Base.metadata.create_all)
+        self._initialized = True
         logger.info("Database tables initialized")
+
+    @property
+    def engine(self):
+        """Get engine, initializing if needed."""
+        if self._engine is None:
+            raise RuntimeError("Database not initialized. Call init() first.")
+        return self._engine
+
+    @property
+    def session_factory(self):
+        """Get session factory, initializing if needed."""
+        if self._session_factory is None:
+            raise RuntimeError("Database not initialized. Call init() first.")
+        return self._session_factory
 
     @asynccontextmanager
     async def session(self) -> AsyncGenerator[AsyncSession, None]:
