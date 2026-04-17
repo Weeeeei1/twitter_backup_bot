@@ -26,6 +26,9 @@ from src.bot.menus.account_menu import account_menu
 from src.bot.menus.settings_menu import settings_menu
 from src.bot import state as state_module
 from src.services.account_service import AccountService
+from src.services.monitor_service import MonitorService
+from src.twitter.client import TwitterClient, get_twitter_client
+from src.scheduler.pool import SchedulerPool
 
 
 logger = logging.getLogger(__name__)
@@ -41,6 +44,8 @@ class BotApplication:
         self.redis = redis
         self.app: Optional[Application] = None
         self.account_service: Optional[AccountService] = None
+        self.monitor_service: Optional[MonitorService] = None
+        self.scheduler_pool: Optional[SchedulerPool] = None
 
     def _register_handlers(self) -> None:
         """Register command handlers."""
@@ -199,6 +204,36 @@ class BotApplication:
             # Create account service with bot instance
             self.account_service = AccountService(self.db, self.app.bot)
             state_module.account_service = self.account_service
+
+            # Initialize Twitter client
+            twitter_client = await get_twitter_client()
+
+            # Create monitor service
+            self.monitor_service = MonitorService(
+                db=self.db,
+                bot=self.app.bot,
+                twitter_client=twitter_client,
+            )
+
+            # Create and start scheduler pool
+            self.scheduler_pool = SchedulerPool(
+                db=self.db,
+                redis=self.redis,
+                num_workers=3,
+            )
+            # Wire up monitor service to scheduler pool
+            self.scheduler_pool.monitor_service = self.monitor_service
+            await self.scheduler_pool.start()
+            logger.info("Scheduler pool started")
+
+            # Enqueue all active accounts for monitoring
+            from src.db.repositories import TwitterAccountRepository
+
+            account_repo = TwitterAccountRepository(self.db)
+            accounts = await account_repo.get_active_accounts()
+            for account in accounts:
+                await self.scheduler_pool.enqueue_account(account.id)
+            logger.info(f"Enqueued {len(accounts)} accounts for monitoring")
 
             # Register handlers
             self._register_handlers()

@@ -35,6 +35,9 @@ class SchedulerPool:
         # Running flag
         self._running = False
 
+        # Monitor service reference (set later)
+        self.monitor_service = None
+
     def get_scheduler(self, account_id: int) -> AdaptiveScheduler:
         """Get or create scheduler for account."""
         if account_id not in self._schedulers:
@@ -98,15 +101,26 @@ class SchedulerPool:
                     # Compute interval
                     interval = await scheduler.compute_interval(account_id)
 
+                    logger.info(
+                        f"Worker {worker_id}: checking account {account_id}, next check in {interval}s"
+                    )
+
                     # Sleep for interval
                     await asyncio.sleep(interval)
 
                     # Process account (fetch new tweets)
-                    # TODO: Call Twitter service to fetch tweets
-                    # tweets_found = await self.twitter_service.fetch_new_tweets(account_id)
+                    if self.monitor_service:
+                        result = await self.monitor_service.monitor_account(account_id)
+                        tweets_found = result.get("count", 0)
+                        logger.info(
+                            f"Worker {worker_id}: account {account_id} - found {tweets_found} tweets"
+                        )
+                    else:
+                        tweets_found = 0
+                        logger.warning(f"Worker {worker_id}: monitor_service not set")
 
                     # Update stats
-                    # await scheduler.update_stats(account_id, tweets_found)
+                    await scheduler.update_stats(account_id, tweets_found)
 
                     # Re-queue for next check
                     await self.redis.enqueue_tweet_account(account_id)
