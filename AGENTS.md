@@ -224,6 +224,30 @@ interval = max(min_interval, min(max_interval, interval))
 
 ---
 
+## 代码修改流程
+
+**重要规则：代码层面的修改必须遵循以下流程：**
+
+1. 本地修改代码并测试
+2. 推送到 GitHub
+3. 服务器执行 `git pull` 拉取更新
+4. 重启服务
+
+**禁止在服务器上直接修改代码！**
+
+### 代码更新后服务器操作
+
+```bash
+cd /opt/twitter_backup_bot && git pull && docker-compose up -d --build
+```
+
+```bash
+# 检查命令
+docker-compose ps && sleep 10 && docker-compose logs bot | tail -30
+```
+
+---
+
 ## 开发相关
 
 ### 本地运行

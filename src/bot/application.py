@@ -36,15 +36,13 @@ class BotApplication:
         self.bot_token = bot_token
         self.db = db
         self.redis = redis
-
-        # Build application
-        self.app = Application.builder().token(bot_token).build()
-
-        # Register handlers
-        self._register_handlers()
+        self.app: Optional[Application] = None
 
     def _register_handlers(self) -> None:
         """Register command handlers."""
+        if self.app is None:
+            return
+
         self.app.add_handler(CommandHandler("start", start_handler))
         self.app.add_handler(CommandHandler("help", help_handler))
         self.app.add_handler(CommandHandler("add_account", add_account_handler))
@@ -69,20 +67,27 @@ class BotApplication:
         url = update.message.text.strip()
         logger.info(f"Received Twitter URL: {url}")
 
-        # TODO: Process URL and offer to backup
         await update.message.reply_text(
             f"📋 Received URL: {url}\n\nUse /backup to back up this account's tweets."
         )
 
     async def run(self) -> None:
         """Run the bot."""
+        # Build application in async context
+        self.app = Application.builder().token(self.bot_token).build()
+
+        # Register handlers
+        self._register_handlers()
+
         logger.info("Starting bot polling...")
+
+        # Run with polling - this will block
         await self.app.run_polling(
             allowed_updates=Update.ALL_TYPES, drop_pending_updates=True
         )
 
     async def shutdown(self) -> None:
         """Shutdown the bot."""
-        logger.info("Shutting down bot...")
-        await self.app.stop()
-        await self.app.update_queue.join()
+        if self.app:
+            logger.info("Shutting down bot...")
+            await self.app.stop()
