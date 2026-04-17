@@ -88,6 +88,12 @@ class BotApplication:
 
     async def shutdown(self) -> None:
         """Shutdown the bot."""
-        if self.app:
+        if self.app and self.app._running:
             logger.info("Shutting down bot...")
-            await self.app.stop()
+            try:
+                await self.app.stop()
+            except RuntimeError as e:
+                if "not running" in str(e).lower():
+                    logger.info("App already stopped")
+                else:
+                    raise
