@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import signal
 from typing import Optional
 
 from telegram import Update
@@ -73,15 +74,6 @@ class BotApplication:
 
     def run(self) -> None:
         """Run the bot - using asyncio.run() to properly manage event loop."""
-        # Build application
-        self.app = Application.builder().token(self.bot_token).build()
-
-        # Register handlers
-        self._register_handlers()
-
-        # Use asyncio.run() to properly manage the event loop
-        # This avoids the "event loop closed" issue
-        import asyncio
 
         async def init_and_poll():
             # Initialize services
@@ -89,15 +81,35 @@ class BotApplication:
             await self.redis.init()
             logger.info("Services initialized")
 
-            # Start polling
+            # Build application
+            self.app = Application.builder().token(self.bot_token).build()
+
+            # Register handlers
+            self._register_handlers()
+
+            # Initialize and start
             await self.app.initialize()
             await self.app.start()
             logger.info("Bot started, waiting for updates...")
 
-            # Run until interrupted
+            # Keep running until stopped
+            stop_event = asyncio.Event()
+            asyncio.get_event_loop().add_signal_handler(
+                signal.SIGINT, lambda: stop_event.set()
+            )
+            asyncio.get_event_loop().add_signal_handler(
+                signal.SIGTERM, lambda: stop_event.set()
+            )
+
             try:
-                await self.app.idle()
-            except Exception as e:
-                logger.error(f"Error during idle: {e}")
+                await stop_event.wait()
+            except asyncio.CancelledError:
+                pass
+
+            # Shutdown
+            logger.info("Shutting down...")
+            await self.app.stop()
+            await self.app.shutdown()
+            logger.info("Bot shutdown complete")
 
         asyncio.run(init_and_poll())
