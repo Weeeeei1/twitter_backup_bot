@@ -97,10 +97,8 @@ class TwitterClient:
             raise RuntimeError("Twitter client not initialized")
 
         try:
-            tweets = await self.api.user_tweets(username, limit=limit)
-
             result = []
-            for tweet in tweets:
+            async for tweet in self.api.user_tweets(username, limit=limit):
                 tweet_data = self._parse_tweet(tweet)
                 if since and tweet.postedAt:
                     if tweet.postedAt < since:
@@ -125,8 +123,10 @@ class TwitterClient:
             raise RuntimeError("Twitter client not initialized")
 
         try:
-            tweets = await self.api.user_tweets_and_replies(username, limit=limit)
-            return [self._parse_tweet(t) for tweet in tweets]
+            result = []
+            async for tweet in self.api.user_tweets_and_replies(username, limit=limit):
+                result.append(self._parse_tweet(tweet))
+            return result
         except Exception as e:
             logger.error(f"Failed to get tweets/replies for {username}: {e}")
             return []
@@ -154,9 +154,8 @@ class TwitterClient:
             raise RuntimeError("Twitter client not initialized")
 
         try:
-            tweets = await self.api.search(query, limit=limit)
             result = []
-            for tweet in tweets:
+            async for tweet in self.api.search(query, limit=limit):
                 tweet_data = self._parse_tweet(tweet)
                 if since and tweet.postedAt:
                     if tweet.postedAt < since:
